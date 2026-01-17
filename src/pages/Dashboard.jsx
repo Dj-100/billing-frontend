@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { generatePDF } from '../utils/pdfGenerator';
+import { API_URL } from '../config';
 
 const Dashboard = () => {
   const navigate = useNavigate();
