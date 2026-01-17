@@ -13,7 +13,8 @@ const Dashboard = () => {
 
   // Fetch History on Load
   useEffect(() => {
-    axios.get('${API_URL}/api/bills/history')
+    // 👇 Use Backticks (`) here
+    axios.get(`${API_URL}/api/bills/history`)
       .then(res => setHistory(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -48,7 +49,7 @@ const Dashboard = () => {
       alert("Bill Cancelled Successfully.");
       setSearchedBill(res.data); // Update UI
       // Refresh History
-      const hist = await axios.get('${API_URL}/api/bills/history');
+      const hist = await axios.get(`${API_URL}/api/bills/history`);
       setHistory(hist.data);
     } catch (err) { alert("Error cancelling bill."); }
   };

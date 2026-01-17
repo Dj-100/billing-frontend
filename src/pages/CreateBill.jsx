@@ -43,7 +43,7 @@ const CreateBill = () => {
   const saveBill = async () => {
     if(!bill.paymentMode) return alert("Please enter Payment Details");
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, bill);
+      const res = await axios.post(`${API_URL}/api/bills/create`, bill);
       await generatePDF(res.data);
       alert("Bill Saved!");
       navigate('/dashboard');
