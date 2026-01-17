@@ -59,7 +59,9 @@ export const generatePDF = async (bill) => {
 
   // --- 3. CUSTOMER & INVOICE DETAILS ---
   const detailsTopY = headerBottomY + headerHeight;
-  const detailsHeight = 28; 
+  
+  // FIX 1: Increased Height (was 28) to make room for 2-line addresses
+  const detailsHeight = 38; 
   const detailsBottomY = detailsTopY + detailsHeight;
   
   // Draw Box around Customer Details
@@ -82,11 +84,33 @@ export const generatePDF = async (bill) => {
   currentY += 5;
   doc.text("PHONE NO", labelX, currentY); doc.text(`:  ${bill.customer.phone}`, valX, currentY);
   currentY += 5;
-  doc.text("ADDRESS", labelX, currentY); doc.text(`:  ${bill.customer.address}`, valX, currentY);
-  currentY += 5;
+
+  // FIX 2: WRAP ADDRESS TEXT & ADJUST Y POSITION
+  // --- FIX START: Professional Address Alignment ---
+  
+  // 1. Print Label
+  doc.text("ADDRESS", labelX, currentY);
+  
+  // 2. Print Colon separately
+  doc.text(":", valX, currentY);
+
+  // 3. Prepare the Address Text (Without Colon)
+  // We reduce the width slightly (from 75 to 70) to account for the indentation
+  const addressText = bill.customer.address || "-";
+  const addressLines = doc.splitTextToSize(addressText, 70);
+
+  // 4. Print Address Lines slightly to the right (valX + 3)
+  doc.text(addressLines, valX + 3, currentY);
+  
+  // 5. Calculate new Y position based on how many lines were used
+  // (Each line adds approx 4-5 units of height)
+  currentY += (addressLines.length * 4) + 1; 
+
+  // --- FIX END ---
+
   doc.text("GSTIN", labelX, currentY); doc.text(`:  ${bill.customer.gstin || '-'}`, valX, currentY);
 
-  // Right Side (Invoice Info)
+  // Right Side (Invoice Info) - RESET Y POS
   const rightColX = pageWidth / 2 + 12;
   const rightValX = rightColX + 28;
   currentY = detailsTopY + 10; 
@@ -179,13 +203,13 @@ export const generatePDF = async (bill) => {
 
   // --- VERTICAL LINES FOR TOTALS SECTION ---
   
-  // 1. Far Left Line (ADDED THIS) - Closes the box on the left
+  // 1. Far Left Line
   doc.line(leftMargin, totalsTopY, leftMargin, totalsBottomY);
 
   // 2. Middle Line (Separates Words from Numbers)
   doc.line(totalsBoxX, totalsTopY, totalsBoxX, totalsBottomY);
   
-  // 3. Far Right Line - Closes the box on the right
+  // 3. Far Right Line
   doc.line(rightMargin, totalsTopY, rightMargin, totalsBottomY);
 
   // -- LEFT SIDE CONTENT --
@@ -264,8 +288,7 @@ export const generatePDF = async (bill) => {
   doc.text("  true and correct.", leftMargin + 4, boxTopY + 26);
 
   // -- COL 2: QR CODE --
-  // Use local IP for testing or production URL
-  // CHANGE THIS TO THE NETLIFY LINK
+  // FIX 3: Updated URL to match Netlify Project Name
   const qrUrl = `https://marutijewels.netlify.app/verify/${bill._id}`;
   const qrDataUrl = await QRCode.toDataURL(qrUrl);
   
