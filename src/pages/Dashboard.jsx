@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { generatePDF } from '../utils/pdfGenerator';
 import { API_URL } from '../config';
-import { numToWords } from '../utils/numToWords'; // Import this to fix words
+import { numToWords } from '../utils/numToWords';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,6 +22,17 @@ const Dashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     navigate('/');
+  };
+
+  // --- MATH HELPER: Re-calculate Total (Taxable + 3%) ---
+  // We use this because the Database might have the "Old Math".
+  const calculateCorrectTotal = (bill) => {
+    if (!bill || !bill.items) return 0;
+    // 1. Get Taxable Value (Sum of user inputs)
+    const taxable = bill.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    // 2. Add 3% GST (1.5 + 1.5)
+    const total = Math.round(taxable + (taxable * 0.03));
+    return total;
   };
 
   // Search Bill
@@ -48,29 +59,22 @@ const Dashboard = () => {
       const res = await axios.put(`${API_URL}/api/bills/cancel/${searchedBill.invoiceNo}`);
       alert("Bill Cancelled Successfully.");
       setSearchedBill(res.data); 
-      // Refresh History
       const hist = await axios.get(`${API_URL}/api/bills/history`);
       setHistory(hist.data);
     } catch (err) { alert("Error cancelling bill."); }
   };
 
-  // --- THE CONSISTENCY FIX ---
-  // We recalculate the math here so it matches the "Create Bill" logic perfectly.
+  // Download PDF (Recalculates Math on the Fly)
   const handleDownload = () => {
     if(!searchedBill) return;
 
-    // 1. Get the Raw Amount from Items (This is the Taxable Value)
-    // Note: We use 'item.amount' because that's what you typed in the box.
     const taxable = searchedBill.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-
-    // 2. Calculate GST on top (Exclusive)
     const cgst = taxable * 0.015;
     const sgst = taxable * 0.015;
     const total = Math.round(taxable + cgst + sgst);
 
-    // 3. Create a "Corrected" Bill Object for the PDF
     const billForPDF = {
-      ...searchedBill, // Keep name, date, invoiceNo, etc.
+      ...searchedBill,
       taxableValue: taxable.toFixed(2),
       cgstAmount: cgst.toFixed(2),
       sgstAmount: sgst.toFixed(2),
@@ -113,13 +117,14 @@ const Dashboard = () => {
           <div style={{background:'#f9f9f9', padding:'15px', borderRadius:'8px', marginTop:'10px', border:'1px solid #ddd'}}>
             <p><strong>Invoice:</strong> {searchedBill.invoiceNo}</p>
             <p><strong>Customer:</strong> {searchedBill.customer.name}</p>
-            <p><strong>Amount:</strong> Rs. {searchedBill.grandTotal}</p>
+            
+            {/* FIXED: USE CALCULATED TOTAL */}
+            <p><strong>Amount:</strong> Rs. {calculateCorrectTotal(searchedBill)}</p>
+            
             <p><strong>Status:</strong> <span className={searchedBill.status === 'CANCELLED' ? 'status-cancelled' : 'status-active'}>{searchedBill.status}</span></p>
             
             <div className="row" style={{marginTop:'10px'}}>
-               {/* Use the new handleDownload function */}
                <button className="col btn-secondary" onClick={handleDownload}>Download PDF</button>
-               
                {searchedBill.status !== 'CANCELLED' && (
                  <button className="col btn-danger" onClick={handleCancel}>Cancel Bill</button>
                )}
@@ -137,7 +142,9 @@ const Dashboard = () => {
               <strong>#{bill.invoiceNo}</strong> - {bill.customer.name}
             </div>
             <div style={{textAlign:'right'}}>
-              <div>Rs. {bill.grandTotal}</div>
+              {/* FIXED: USE CALCULATED TOTAL */}
+              <div>Rs. {calculateCorrectTotal(bill)}</div>
+              
               <small className={bill.status === 'CANCELLED' ? 'status-cancelled' : 'status-active'}>
                 {bill.status}
               </small>

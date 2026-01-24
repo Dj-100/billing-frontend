@@ -19,6 +19,15 @@ const VerifyBill = () => {
 
   const isCancelled = bill.status === 'CANCELLED';
 
+  // --- MATH HELPER: Recalculate Total on the Fly ---
+  const calculateTotal = () => {
+    if (!bill.items) return 0;
+    // 1. Get Taxable Sum
+    const taxable = bill.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    // 2. Add 3% GST
+    return Math.round(taxable + (taxable * 0.03));
+  };
+
   return (
     <div className="container verify-box" style={{borderTop: isCancelled ? '5px solid red' : '5px solid green'}}>
       
@@ -35,8 +44,6 @@ const VerifyBill = () => {
             <strong>Invoice No:</strong> <span>{bill.invoiceNo}</span>
         </div>
         
-        {/* DATE REMOVED COMPLETELY */}
-
         <div style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee'}}>
             <strong>Customer:</strong> <span>{bill.customer.name}</span>
         </div>
@@ -49,7 +56,8 @@ const VerifyBill = () => {
         </div>
         
         <div style={{marginTop:'20px', fontSize:'22px', color:'#333', textAlign:'center', background:'#e0e0e0', padding:'10px', borderRadius:'5px'}}>
-          <strong>Total: Rs. {bill.grandTotal}</strong>
+          {/* FIXED: Display Calculated Total */}
+          <strong>Total: Rs. {calculateTotal()}</strong>
         </div>
       </div>
       
