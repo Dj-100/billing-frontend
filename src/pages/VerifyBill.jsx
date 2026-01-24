@@ -1,4 +1,3 @@
-// client/src/pages/VerifyBill.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -10,26 +9,48 @@ const VerifyBill = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Replace with RENDER URL in production
     axios.get(`${API_URL}/api/bills/${id}`)
       .then(res => { setBill(res.data); setLoading(false); })
       .catch(() => { setLoading(false); });
   }, [id]);
 
   if (loading) return <div className="container">Loading Verification...</div>;
-  if (!bill) return <div className="container error"><h1>❌ Invalid Bill</h1><p>This QR Code is not recognized in our database.</p></div>;
+  if (!bill) return <div className="container error"><h1>❌ Invalid QR Code</h1><p>This bill is not recognized.</p></div>;
+
+  const isCancelled = bill.status === 'CANCELLED';
 
   return (
-    <div className="container verify-box">
-      <div className="verified-badge">✅ Verified Original</div>
-      <h2 style={{color: '#a52a2a'}}>Maruti Jewellers</h2>
+    <div className="container verify-box" style={{borderTop: isCancelled ? '5px solid red' : '5px solid green'}}>
+      
+      <div className="verified-badge" style={{background: isCancelled ? '#ffebee' : '#e8f5e9', color: isCancelled ? '#c62828' : '#2e7d32'}}>
+         {isCancelled ? '❌ BILL CANCELLED' : '✅ Verified Original'}
+      </div>
+
+      <h2 style={{color: '#a52a2a', marginTop:'15px'}}>Maruti Jewellers</h2>
       <p style={{color:'#666', marginBottom:'20px'}}>02, Ratnadeep CHS, Navghar Road, Bhayandar East</p>
       
       <div style={{textAlign:'left', background:'#f9f9f9', padding:'20px', borderRadius:'8px', border:'1px solid #eee'}}>
-        <p style={{padding:'5px 0'}}><strong>Invoice No:</strong> {bill.invoiceNo}</p>
-        <p style={{padding:'5px 0'}}><strong>Date:</strong> {new Date(bill.date).toLocaleDateString()}</p>
-        <p style={{padding:'5px 0'}}><strong>Customer:</strong> {bill.customer.name}</p>
-        <p style={{padding:'5px 0', fontSize:'18px'}}><strong>Total Amount:</strong> Rs. {bill.grandTotal}</p>
+        
+        <div style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee'}}>
+            <strong>Invoice No:</strong> <span>{bill.invoiceNo}</span>
+        </div>
+        
+        {/* DATE REMOVED COMPLETELY */}
+
+        <div style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee'}}>
+            <strong>Customer:</strong> <span>{bill.customer.name}</span>
+        </div>
+
+        <div style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee'}}>
+            <strong>Status:</strong> 
+            <span style={{fontWeight:'bold', color: isCancelled ? 'red' : 'green'}}>
+                {isCancelled ? 'CANCELLED' : 'ACTIVE'}
+            </span>
+        </div>
+        
+        <div style={{marginTop:'20px', fontSize:'22px', color:'#333', textAlign:'center', background:'#e0e0e0', padding:'10px', borderRadius:'5px'}}>
+          <strong>Total: Rs. {bill.grandTotal}</strong>
+        </div>
       </div>
       
       <p style={{marginTop:'20px', fontSize:'12px', color:'#999'}}>
